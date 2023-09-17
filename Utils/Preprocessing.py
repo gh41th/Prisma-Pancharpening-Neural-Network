@@ -128,6 +128,35 @@ def rescale(data, scaler=None, pan_scaler=None, input_scaling=True):
 
 
 
+# Function to Get a list of defected bands in a hyperspectral cube
+
+def get_defected_bands(cube):
+    """
+    This function identifies bands that contain a very low number of non-zero pixels
+    and may be considered defected or noisy.
+
+    Args:
+        cube (numpy.ndarray): The input hyperspectral cube with shape (rows, cols, bands).
+
+    Returns:
+        list: A list of band indices that are considered defected.
+    """
+    defected_bands = []  # Initialize an empty list to store defected band indices
+    rows, cols, bands = cube.shape  # Get the dimensions of the hyperspectral cube
+
+    # Iterate through the bands to check for defects
+    for i in range(bands):
+        # Count the number of non-zero pixels in the current band
+        non_zero_pixels = np.count_nonzero(cube[:, :, i])
+
+        # Check if the percentage of non-zero pixels is less than 10%
+        if non_zero_pixels < rows * cols * 0.1:
+            defected_bands.append(i)  # Add the index of the defected band to the list
+
+    return defected_bands
+
+
+
 
 # Function to create training patches from input and output arrays
 def create_patches(input_arr, output_arr, patch_size):

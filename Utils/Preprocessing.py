@@ -24,6 +24,7 @@ def load_image_from_file(filename):
         PAN = np.array(f['HDFEOS']['SWATHS']['PRS_L2D_PCO']['Data Fields']['Cube'])
         return np.transpose(SWIR, (0, 2, 1)), np.transpose(VNIR, (0, 2, 1)), PAN
 
+
 # Function to downsample an image by a specified ratio
 def downsample(image, ratio):
     """
@@ -40,6 +41,8 @@ def downsample(image, ratio):
         return image[::ratio, ::ratio]
     else:
         return image[::ratio, ::ratio, :]
+
+
 
 # Function to upsample an image by a specified ratio
 def upsample(image, ratio):
@@ -58,6 +61,8 @@ def upsample(image, ratio):
     for i in range(m):
         X[:, :, i] = scipy.ndimage.zoom(image[:, :, i], ratio, order=3)
     return X
+
+
 
 # Function to clip 1% of histogram values for each band to prevent extreme values
 def clip(input):
@@ -79,6 +84,8 @@ def clip(input):
         max_val = np.max(input[:, :, i])
         input2[:, :, i] = exposure.rescale_intensity(input[:, :, i], in_range=(p1, p99), out_range=(min_val, max_val))
     return input2
+
+
 
 # Function to rescale data using RobustScaler
 def rescale(data, scaler=None, pan_scaler=None, input_scaling=True):
@@ -119,8 +126,40 @@ def rescale(data, scaler=None, pan_scaler=None, input_scaling=True):
         scaled_data = scaler.transform(data_reshaped)
         return scaled_data.reshape(rows, cols, bands)
 
+
+
+# Function to Get a list of defected bands in a hyperspectral cube
+
+def get_defected_bands(cube):
+    """
+    This function identifies bands that contain a very low number of non-zero pixels
+    and may be considered defected or noisy.
+
+    Args:
+        cube (numpy.ndarray): The input hyperspectral cube with shape (rows, cols, bands).
+
+    Returns:
+        list: A list of band indices that are considered defected.
+    """
+    defected_bands = []  # Initialize an empty list to store defected band indices
+    rows, cols, bands = cube.shape  # Get the dimensions of the hyperspectral cube
+
+    # Iterate through the bands to check for defects
+    for i in range(bands):
+        # Count the number of non-zero pixels in the current band
+        non_zero_pixels = np.count_nonzero(cube[:, :, i])
+
+        # Check if the percentage of non-zero pixels is less than 10%
+        if non_zero_pixels < rows * cols * 0.1:
+            defected_bands.append(i)  # Add the index of the defected band to the list
+
+    return defected_bands
+
+
+
+
 # Function to create training patches from input and output arrays
-def create_patches(output_arr, input_arr, patch_size):
+def create_patches(input_arr, output_arr, patch_size):
     """
     Create training patches from input and output hyperspectral data arrays.
 
@@ -151,8 +190,8 @@ def create_patches(output_arr, input_arr, patch_size):
     input_list_patches = []
     output_list_patches = []
 
-    for i in range(0, y_size - patch_size + 1, 2 * patch_size // 3):  # 33% overlap
-        for j in range(0, x_size - patch_size + 1, 2 * patch_size // 3):
+    for i in range(0, y_size - patch_size + 1,  patch_size // 2):  # 50% overlap
+        for j in range(0, x_size - patch_size + 1,  patch_size // 2):
             input_patch = input_arraypad[i:i + patch_size, j:j + patch_size, :]
             output_patch = output_arraypad[i:i + patch_size, j:j + patch_size, :]
 
